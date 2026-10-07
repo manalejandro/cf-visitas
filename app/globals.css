@@ -1,17 +1,225 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ── Self-hosted Inter (SIL OFL — see /fonts/OFL.txt) ─────────────────────── */
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/inter-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/inter-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* ── Theme tokens ─────────────────────────────────────────────────────────────
+   Light is the default theme; `.dark` on <html> switches the palette.
+   Components use semantic utilities (bg-panel, text-muted, border-line…) so the
+   toggle only changes CSS variables.                                            */
+
 :root {
   color-scheme: light;
-  background: #f8fafc;
-  color: #111827;
-  font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  --surface: #f4f6fb;
+  --surface-2: #ffffff;
+  --panel: rgba(255, 255, 255, 0.85);
+  --subtle: rgba(15, 23, 42, 0.045);
+  --subtle-strong: rgba(15, 23, 42, 0.09);
+  --line: rgba(15, 23, 42, 0.09);
+  --line-strong: rgba(15, 23, 42, 0.16);
+  --fg: #334155;
+  --strong: #0b1220;
+  --muted: #64748b;
+  --faint: #94a3b8;
+  --accent: #4f46e5;
+  --accent-soft: #818cf8;
+  --accent-2: #0891b2;
+  --success: #059669;
+  --warning: #b45309;
+  --danger: #e11d48;
+  --glow-a: rgba(99, 102, 241, 0.1);
+  --glow-b: rgba(34, 211, 238, 0.08);
+  --scroll-thumb: #cbd5e1;
+  --selection: rgba(99, 102, 241, 0.22);
+  --panel-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 12px 32px -24px rgba(15, 23, 42, 0.35);
 }
 
-body {
-  margin: 0;
+.dark {
+  color-scheme: dark;
+
+  --surface: #05070d;
+  --surface-2: #0a0f1a;
+  --panel: rgba(255, 255, 255, 0.02);
+  --subtle: rgba(255, 255, 255, 0.04);
+  --subtle-strong: rgba(255, 255, 255, 0.08);
+  --line: rgba(255, 255, 255, 0.07);
+  --line-strong: rgba(255, 255, 255, 0.14);
+  --fg: #cbd5e1;
+  --strong: #f8fafc;
+  --muted: #94a3b8;
+  --faint: #64748b;
+  --accent: #818cf8;
+  --accent-soft: #a5b4fc;
+  --accent-2: #22d3ee;
+  --success: #34d399;
+  --warning: #fbbf24;
+  --danger: #fb7185;
+  --glow-a: rgba(99, 102, 241, 0.14);
+  --glow-b: rgba(34, 211, 238, 0.09);
+  --scroll-thumb: #24304a;
+  --selection: rgba(99, 102, 241, 0.4);
+  --panel-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
-a {
-  color: inherit;
+@theme inline {
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-panel: var(--panel);
+  --color-subtle: var(--subtle);
+  --color-subtle-strong: var(--subtle-strong);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-fg: var(--fg);
+  --color-strong: var(--strong);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-2: var(--accent-2);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+}
+
+/* ── Base ─────────────────────────────────────────────────────────────────── */
+
+@layer base {
+  body {
+    background-color: var(--surface);
+    background-image:
+      radial-gradient(900px 480px at 12% -8%, var(--glow-a), transparent 60%),
+      radial-gradient(800px 420px at 88% 4%, var(--glow-b), transparent 55%);
+    background-attachment: fixed;
+    color: var(--fg);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background: var(--selection);
+    color: var(--strong);
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scroll-thumb) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--scroll-thumb);
+    border-radius: 999px;
+    border: 2px solid var(--surface);
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+/* ── Components ───────────────────────────────────────────────────────────── */
+
+@layer components {
+  .panel {
+    border-radius: 1rem;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    box-shadow: var(--panel-shadow);
+    backdrop-filter: blur(12px);
+  }
+
+  .panel-header {
+    @apply flex flex-wrap items-start justify-between gap-3 px-5 pb-2 pt-5;
+  }
+
+  .panel-title {
+    @apply text-sm font-semibold tracking-tight text-strong;
+  }
+
+  .panel-subtitle {
+    @apply mt-0.5 text-xs text-muted;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-line bg-subtle px-2.5 py-1 text-[11px] font-medium text-muted;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-line bg-subtle px-3 py-2 text-sm font-medium text-fg transition-colors hover:bg-subtle-strong focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent/70 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-primary {
+    @apply border-transparent bg-gradient-to-r from-indigo-500 to-cyan-400 font-semibold text-white shadow-[0_8px_24px_-12px_rgba(99,102,241,0.9)] hover:brightness-110;
+  }
+
+  .btn-danger {
+    @apply border-danger/25 bg-danger/10 text-danger hover:bg-danger/20;
+  }
+
+  .btn-ghost {
+    @apply border-transparent bg-transparent text-muted hover:bg-subtle hover:text-strong;
+  }
+
+  .input {
+    @apply w-full rounded-lg border border-line bg-surface-2 px-3 py-2 text-sm text-strong outline-none transition placeholder:text-faint focus:border-accent/70 focus:ring-2 focus:ring-accent/20;
+  }
+
+  .mono {
+    font-family: var(--font-mono);
+    font-variant-ligatures: none;
+  }
+
+  .divider {
+    @apply h-px w-full bg-gradient-to-r from-transparent via-line to-transparent;
+  }
+
+  .skeleton {
+    @apply animate-pulse rounded-lg bg-subtle;
+  }
+}
+
+/* ── Animations ───────────────────────────────────────────────────────────── */
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.35s ease-out both;
 }

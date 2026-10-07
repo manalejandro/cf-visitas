@@ -1,6 +1,14 @@
 {
   "name": "cf-visitas",
-  "version": "0.1.0",
+  "version": "1.0.0",
+  "description": "Privacy-first web analytics built on Cloudflare Workers, D1 and vinext",
+  "license": "MIT",
+  "author": "manalejandro",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/manalejandro/cf-visitas.git"
+  },
+  "homepage": "https://visitas.manalejandro.com",
   "private": true,
   "packageManager": "npm@12.1.0",
   "dependencies": {
@@ -18,6 +26,7 @@
     "@types/react-dom": "latest",
     "@vitejs/plugin-react": "latest",
     "@vitejs/plugin-rsc": "latest",
+    "javascript-obfuscator": "^5.9.0",
     "tailwindcss": "latest",
     "typescript": "latest",
     "vite": "latest",
@@ -25,11 +34,16 @@
   },
   "type": "module",
   "scripts": {
-    "dev": "vinext dev",
-    "build": "vinext build",
-    "start": "wrangler dev --config dist/server/wrangler.json",
+    "dev": "npm run build:tracker && vinext dev",
+    "build": "npm run build:tracker && vinext build",
+    "build:tracker": "node scripts/build-tracker.mjs",
+    "start": "wrangler dev --config dist/server/wrangler.json --persist-to .wrangler/state",
     "deploy": "vinext-cloudflare deploy --config dist/server/wrangler.json",
     "preview": "npm run build && npm run start --",
-    "cf-typegen": "wrangler types --env-interface CloudflareEnv ./worker-configuration.d.ts"
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv ./worker-configuration.d.ts",
+    "db:migrate": "wrangler d1 migrations apply cf-visitas --local",
+    "db:migrate:remote": "wrangler d1 migrations apply cf-visitas --remote",
+    "keys:generate": "node scripts/generate-keys.mjs",
+    "typecheck": "tsc --noEmit"
   }
 }

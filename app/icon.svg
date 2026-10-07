@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Visitas">
+  <defs>
+    <linearGradient id="visitas-mark-gradient" x1="96" y1="96" x2="416" y2="416" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6366F1" />
+      <stop offset="1" stop-color="#22D3EE" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="url(#visitas-mark-gradient)" />
+  <rect x="128" y="272" width="64" height="112" rx="32" fill="#FFFFFF" fill-opacity="0.88" />
+  <rect x="224" y="208" width="64" height="176" rx="32" fill="#FFFFFF" fill-opacity="0.95" />
+  <rect x="320" y="144" width="64" height="240" rx="32" fill="#FFFFFF" />
+  <circle cx="352" cy="104" r="20" fill="#FFFFFF" />
+</svg>
