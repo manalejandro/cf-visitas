@@ -9,7 +9,7 @@ export default function DashboardLoading() {
         <div className="skeleton h-9 w-56" />
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
         {Array.from({ length: 5 }).map((_, index) => (
           <div key={index} className="panel h-[122px] p-5">
             <div className="skeleton h-3 w-24" />
@@ -19,12 +19,12 @@ export default function DashboardLoading() {
         ))}
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         <div className="panel h-[360px] xl:col-span-2" />
         <div className="panel h-[360px]" />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         {Array.from({ length: 6 }).map((_, index) => (
           <div key={index} className="panel h-[260px]" />
         ))}

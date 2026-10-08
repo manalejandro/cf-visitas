@@ -406,7 +406,7 @@ function VisitDetails({ visit }: { visit: VisitRecord }) {
         />
       </dl>
 
-      <div className="grid gap-2 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
         <JsonBlock title="Hardware & sensors" value={visit.hardware} />
         <JsonBlock title="Client properties" value={properties} />
         <JsonBlock title="Request metadata" value={visit.meta} />

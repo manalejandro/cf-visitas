@@ -64,7 +64,7 @@ export default async function KeysPage() {
         </div>
       ) : (
         <>
-          <section className="grid gap-4 lg:grid-cols-3">
+          <section className="grid grid-cols-1 gap-4 lg:grid-cols-3">
             <div className="panel p-5 lg:col-span-2">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-3">

@@ -63,7 +63,17 @@ export function VisitsAreaChart({ points, height = 280 }: { points: TimelinePoin
     const labelStep = Math.max(1, Math.ceil(points.length / (width < 560 ? 4 : width < 900 ? 6 : 9)));
     const xLabels = points
       .map((point, index) => ({ point, index }))
-      .filter(({ index }) => index % labelStep === 0 || index === points.length - 1);
+      .filter(({ index }) => index % labelStep === 0);
+
+    // Always show the last label, dropping the previous ones when they would
+    // collide with it on narrow charts.
+    const lastIndex = points.length - 1;
+    if (xLabels.length > 0 && xLabels[xLabels.length - 1].index !== lastIndex) {
+      while (xLabels.length > 1 && x(lastIndex) - x(xLabels[xLabels.length - 1].index) < 46) {
+        xLabels.pop();
+      }
+      xLabels.push({ point: points[lastIndex], index: lastIndex });
+    }
 
     return { innerHeight, stepX, x, y, linePath, areaPath, gridLines, xLabels };
   }, [points, width, height]);

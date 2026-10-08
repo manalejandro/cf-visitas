@@ -66,7 +66,7 @@ export default async function OverviewPage({
         <EmptyDashboard />
       ) : (
         <>
-          <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+          <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
             <StatCard
               label="Total visits"
               value={formatCompactNumber(stats.summary.totalVisits)}
@@ -106,7 +106,7 @@ export default async function OverviewPage({
             />
           </section>
 
-          <section className="grid gap-4 xl:grid-cols-3">
+          <section className="grid grid-cols-1 gap-4 xl:grid-cols-3">
             <ChartPanel
               title="Visits over time"
               subtitle={definition.bucket === "hour" ? "Hourly buckets · UTC" : "Daily buckets · UTC"}
@@ -119,7 +119,7 @@ export default async function OverviewPage({
             </ChartPanel>
           </section>
 
-          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
             <ChartPanel title="Browsers" subtitle="Most used browsers">
               <DonutChart data={breakdowns.browsers ?? []} centerLabel="Visits" />
             </ChartPanel>
@@ -157,7 +157,7 @@ export default async function OverviewPage({
               More dimensions
               <IconChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
             </summary>
-            <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
               <ChartPanel title="Browser versions" subtitle="Detailed version breakdown">
                 <BarList data={breakdowns.browserVersions ?? []} />
               </ChartPanel>

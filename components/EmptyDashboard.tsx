@@ -22,7 +22,7 @@ export function EmptyDashboard() {
         </div>
       </div>
 
-      <div className="grid gap-6 px-6 py-8 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 px-6 py-8 md:grid-cols-3">
         <div className="space-y-3">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-accent">Step 1 · Install</p>
           <p className="text-sm text-muted">
