@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { LogoMark } from "./Logo";
-import { IconAlert, IconLock } from "./icons";
+import { IconAlert, IconExternal, IconLock } from "./icons";
 
 export function LoginForm() {
   const router = useRouter();
@@ -94,6 +94,18 @@ export function LoginForm() {
             {loading ? "Signing in…" : "Sign in"}
           </button>
         </form>
+
+        <p className="mt-6 text-center">
+          <a
+            href="https://github.com/manalejandro/cf-visitas"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 text-xs text-muted transition-colors hover:text-strong"
+          >
+            <IconExternal className="h-3.5 w-3.5" />
+            View source on GitHub
+          </a>
+        </p>
       </div>
     </div>
   );
