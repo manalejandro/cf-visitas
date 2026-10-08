@@ -12,7 +12,7 @@ export function ChartPanel({
   className?: string;
 }) {
   return (
-    <section className={`panel flex flex-col ${className}`}>
+    <section className={`panel flex min-w-0 flex-col ${className}`}>
       <header className="panel-header">
         <div>
           <h2 className="panel-title">{title}</h2>
