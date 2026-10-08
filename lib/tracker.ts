@@ -22,8 +22,9 @@ const CONFIG_PROPERTY_BASE64 = "X192eA==";
 export interface TrackerConfig {
   version: number;
   kid: number;
+  algorithm: string;
   endpoint: string;
-  publicKey: JsonWebKey;
+  publicKey: string;
   blocked: string[];
   issuedAt: number;
   expiresAt: number;
@@ -42,8 +43,9 @@ export async function buildTrackerConfig(origin: string): Promise<TrackerConfig>
   return {
     version: TRACKER_VERSION,
     kid: key.id,
+    algorithm: key.algorithm,
     endpoint: `${endpointOrigin}/api/track`,
-    publicKey: key.publicJwk,
+    publicKey: key.publicKey,
     blocked,
     ...signature,
   };

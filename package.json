@@ -12,6 +12,7 @@
   "private": true,
   "packageManager": "npm@12.1.0",
   "dependencies": {
+    "@noble/post-quantum": "^0.7.1",
     "@vinext/cloudflare": "latest",
     "react": "latest",
     "react-dom": "latest",

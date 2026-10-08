@@ -1,8 +1,11 @@
 /*
  * Visitas tracker — readable source. NOT served: `scripts/build-tracker.mjs`
- * obfuscates it into `tracker.dist.js`, and the Worker prepends the
- * per-request config as `window.__vx` before returning it from GET /tracker.js.
+ * bundles it (with @noble/post-quantum) and obfuscates the result into
+ * `tracker.dist.js`. The Worker prepends the per-request config as
+ * `window.__vx` before returning it from GET /tracker.js.
  */
+import { ml_kem1024 } from "@noble/post-quantum/ml-kem.js";
+
 (function () {
   "use strict";
 
@@ -16,6 +19,8 @@
   var hasSubtle = !!(cryptoObject && cryptoObject.subtle);
   var textEncoder = window.TextEncoder ? new TextEncoder() : null;
   if (!hasSubtle || !textEncoder) return;
+
+  var KEM_INFO = "visitas/ml-kem-1024/aes-256-gcm/v1";
 
   function safe(fn, fallback) {
     try {
@@ -31,6 +36,15 @@
     var binary = "";
     for (var i = 0; i < view.length; i++) binary += String.fromCharCode(view[i]);
     return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+
+  function fromBase64Url(value) {
+    var normalized = String(value).replace(/-/g, "+").replace(/_/g, "/");
+    while (normalized.length % 4) normalized += "=";
+    var binary = atob(normalized);
+    var bytes = new Uint8Array(binary.length);
+    for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes;
   }
 
   function sha256Hex(value) {
@@ -65,7 +79,7 @@
       context.fillRect(0, 0, 280, 60);
       context.font = "16px Arial";
       context.fillStyle = "rgba(255,255,255,0.72)";
-      context.fillText("Visitas fingerprint \u2691", 12, 24);
+      context.fillText("Visitas \u2691", 12, 24);
       context.font = "12px 'Times New Roman'";
       context.fillStyle = "#0b1020";
       context.fillText("Cwm fjord veg balks 0123456789", 12, 46);
@@ -404,7 +418,9 @@
     } catch (e) {}
     clearClientState();
     renderBlockDocument();
-    post(baseEnvelope({ blocked: true, fingerprint: fingerprint })).catch(function () {});
+    var beacon = baseEnvelope({ blocked: true });
+    beacon["fingerprint"] = fingerprint;
+    post(beacon).catch(function () {});
   }
 
   // ── payload + encryption ───────────────────────────────────────────────────
@@ -481,32 +497,42 @@
           performance: getPerformance()
         }
       };
-      return { fingerprint: fingerprint, payload: payload };
+      return [fingerprint, payload];
     });
   }
 
+  // Hybrid post-quantum encryption: ML-KEM-1024 encapsulates a shared secret
+  // that HKDF-SHA256 stretches into the AES-256-GCM key for the payload.
   function encryptPayload(payload) {
+    var encapsulated = ml_kem1024.encapsulate(fromBase64Url(CONFIG.publicKey));
+    var iv = cryptoObject.getRandomValues(new Uint8Array(12));
+    var encoded = textEncoder.encode(JSON.stringify(payload));
+
     return cryptoObject.subtle
-      .importKey("jwk", CONFIG.publicKey, { name: "RSA-OAEP", hash: "SHA-256" }, false, ["encrypt"])
-      .then(function (publicKey) {
-        return cryptoObject.subtle
-          .generateKey({ name: "AES-GCM", length: 256 }, true, ["encrypt"])
-          .then(function (aesKey) {
-            var iv = cryptoObject.getRandomValues(new Uint8Array(12));
-            var encoded = textEncoder.encode(JSON.stringify(payload));
-            return Promise.all([
-              cryptoObject.subtle.encrypt({ name: "AES-GCM", iv: iv }, aesKey, encoded),
-              cryptoObject.subtle.exportKey("raw", aesKey)
-            ]).then(function (results) {
-              return cryptoObject.subtle.encrypt({ name: "RSA-OAEP" }, publicKey, results[1]).then(function (wrapped) {
-                return {
-                  key: bytesToBase64Url(wrapped),
-                  iv: bytesToBase64Url(iv),
-                  data: bytesToBase64Url(results[0])
-                };
-              });
-            });
-          });
+      .importKey("raw", encapsulated.sharedSecret, "HKDF", false, ["deriveKey"])
+      .then(function (baseKey) {
+        return cryptoObject.subtle.deriveKey(
+          {
+            name: "HKDF",
+            hash: "SHA-256",
+            salt: new Uint8Array(0),
+            info: textEncoder.encode(KEM_INFO)
+          },
+          baseKey,
+          { name: "AES-GCM", length: 256 },
+          false,
+          ["encrypt"]
+        );
+      })
+      .then(function (aesKey) {
+        return cryptoObject.subtle.encrypt({ name: "AES-GCM", iv: iv }, aesKey, encoded);
+      })
+      .then(function (ciphertext) {
+        return {
+          kem: bytesToBase64Url(encapsulated.cipherText),
+          iv: bytesToBase64Url(iv),
+          data: bytesToBase64Url(ciphertext)
+        };
       });
   }
 
@@ -570,15 +596,16 @@
     collections
       .then(buildVisit)
       .then(function (result) {
-        if (blockedHashes.indexOf(result.fingerprint) !== -1) {
+        var fingerprint = result[0];
+        if (blockedHashes.indexOf(fingerprint) !== -1) {
           if (revealGuard) clearTimeout(revealGuard);
-          blockPage(result.fingerprint);
+          blockPage(fingerprint);
           return null;
         }
 
         reveal();
         if (revealGuard) clearTimeout(revealGuard);
-        return encryptPayload(result.payload).then(function (encrypted) {
+        return encryptPayload(result[1]).then(function (encrypted) {
           return post(baseEnvelope({ blocked: false, encrypted: encrypted }));
         });
       })

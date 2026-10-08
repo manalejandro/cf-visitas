@@ -79,6 +79,7 @@ export interface VisitsPage {
 
 export interface TrackerKeyInfo {
   id: number;
+  algorithm: string;
   createdAt: string;
   expiresAt: string;
   retiredAt: string | null;
