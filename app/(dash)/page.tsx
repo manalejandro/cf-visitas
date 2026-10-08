@@ -56,7 +56,7 @@ export default async function OverviewPage({
             {definition.label} · updated {formatTime(stats.generatedAt)} UTC
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <RangeSwitcher current={range} />
           <RefreshButton />
         </div>

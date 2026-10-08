@@ -16,13 +16,15 @@ export function LogoMark({ className = "h-8 w-8" }: { className?: string }) {
   );
 }
 
-export function Logo({ className = "" }: { className?: string }) {
+export function Logo({ className = "", compact = false }: { className?: string; compact?: boolean }) {
   return (
     <span className={`inline-flex items-center gap-2.5 ${className}`}>
       <LogoMark className="h-8 w-8" />
       <span className="flex flex-col leading-none">
         <span className="text-[17px] font-bold tracking-tight text-strong">Visitas</span>
-        <span className="text-[9px] font-semibold uppercase tracking-[0.22em] text-faint">Web Analytics</span>
+        {compact ? null : (
+          <span className="text-[9px] font-semibold uppercase tracking-[0.22em] text-faint">Web Analytics</span>
+        )}
       </span>
     </span>
   );

@@ -16,13 +16,15 @@ function niceScale(maxValue: number): { max: number; step: number } {
 
 export function VisitsAreaChart({ points, height = 280 }: { points: TimelinePoint[]; height?: number }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [width, setWidth] = useState(760);
+  // 0 = not measured yet: the chart is only rendered once the container width
+  // is known, so it can never overflow narrow (mobile) viewports.
+  const [width, setWidth] = useState(0);
   const [hover, setHover] = useState<number | null>(null);
 
   useEffect(() => {
     const element = containerRef.current;
     if (!element) return;
-    const update = (value: number) => setWidth(Math.max(320, value));
+    const update = (value: number) => setWidth(Math.max(200, Math.round(value)));
     update(element.clientWidth);
     const observer = new ResizeObserver((entries) => {
       const entry = entries[0];
@@ -70,7 +72,9 @@ export function VisitsAreaChart({ points, height = 280 }: { points: TimelinePoin
   const totalVisits = points.reduce((sum, point) => sum + point.visits, 0);
 
   return (
-    <div ref={containerRef} className="relative w-full select-none">
+    <div ref={containerRef} className="relative w-full select-none" style={{ minHeight: height }}>
+      {width === 0 ? null : (
+        <>
       <svg
         width={width}
         height={height}
@@ -194,6 +198,8 @@ export function VisitsAreaChart({ points, height = 280 }: { points: TimelinePoin
           {formatNumber(totalVisits)} visits in view · times in UTC
         </p>
       ) : null}
+        </>
+      )}
     </div>
   );
 }
