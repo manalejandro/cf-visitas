@@ -206,6 +206,16 @@ npx wrangler d1 execute cf-visitas --local --command "SELECT COUNT(*) FROM visit
 npx wrangler d1 execute cf-visitas --local --command "SELECT id, created_at, expires_at, active FROM tracker_keys"
 ```
 
+## Troubleshooting
+
+**`Content-Security-Policy … blocked JavaScript eval … (missing 'unsafe-eval')`**
+
+Zone-level Cloudflare features injected into the HTML (for example Zaraz) execute their tags with `eval()`, which the strict CSP blocks — the injected script is not part of this project (our tracker and dashboard never use `eval`). Either exclude this hostname from those features (recommended for a private dashboard) or set `CSP_ALLOW_EVAL=true` to append `'unsafe-eval'` to `script-src` while keeping the nonce + `'strict-dynamic'` policy:
+
+```bash
+npx wrangler secret put CSP_ALLOW_EVAL   # paste: true
+```
+
 ## License
 
 MIT — see [LICENSE](LICENSE).

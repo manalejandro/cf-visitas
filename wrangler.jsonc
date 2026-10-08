@@ -55,6 +55,9 @@
 	"vars": {
 		// How often the Worker rotates the tracker encryption key pair (days).
 		"TRACKER_KEY_ROTATION_DAYS": "30"
+		// Set to "true" if zone features that use eval() (e.g. Cloudflare Zaraz)
+		// must run on this hostname — it appends 'unsafe-eval' to the CSP.
+		// "CSP_ALLOW_EVAL": "true"
 	}
 
 	/**

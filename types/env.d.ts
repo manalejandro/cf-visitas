@@ -20,5 +20,7 @@ declare namespace Cloudflare {
     SESSION_SECRET?: string;
     TRACKER_SIGNING_KEY?: string;
     TRACKER_ENDPOINT_ORIGIN?: string;
+    /** Set to "true" to add 'unsafe-eval' to the CSP script-src (Cloudflare Zaraz et al.). */
+    CSP_ALLOW_EVAL?: string;
   }
 }
