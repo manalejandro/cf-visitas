@@ -63,7 +63,7 @@ export function Sidebar({ username }: { username: string }) {
             href={item.href}
             title={item.label}
             aria-label={item.label}
-            className={`inline-flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors ${
+            className={`inline-flex items-center gap-2 rounded-lg px-2 py-2 text-sm font-medium transition-colors sm:px-2.5 ${
               active ? "bg-subtle-strong text-strong" : "text-muted hover:bg-subtle hover:text-strong"
             }`}
           >
@@ -109,11 +109,11 @@ export function Sidebar({ username }: { username: string }) {
       </aside>
 
       {/* Mobile header */}
-      <header className="sticky top-0 z-30 flex items-center justify-between gap-2 border-b border-line bg-surface/85 px-4 py-3 backdrop-blur-xl lg:hidden">
-        <Link href="/" className="shrink-0">
-          <Logo />
+      <header className="sticky top-0 z-30 flex items-center justify-between gap-2 border-b border-line bg-surface/85 px-3 py-3 backdrop-blur-xl sm:px-4 lg:hidden">
+        <Link href="/" className="min-w-0 shrink-0">
+          <Logo compact />
         </Link>
-        <div className="flex items-center gap-0.5">
+        <div className="flex shrink-0 items-center gap-0.5">
           {mobileNav}
           <ThemeToggle />
           <button
