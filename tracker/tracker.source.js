@@ -303,55 +303,108 @@
 
   // ── blocked screen ─────────────────────────────────────────────────────────
 
-  function renderBlockScreen() {
-    safe(function () {
-      var root = document.documentElement;
-      var overlay = document.createElement("div");
-      overlay.setAttribute("data-visitas", "blocked");
-      var style = overlay.style;
-      style.position = "fixed";
-      style.top = "0";
-      style.right = "0";
-      style.bottom = "0";
-      style.left = "0";
-      style.zIndex = "2147483647";
-      style.display = "flex";
-      style.flexDirection = "column";
-      style.alignItems = "center";
-      style.justifyContent = "center";
-      style.gap = "18px";
-      style.background = "#05070d";
-      style.color = "#e6eaf2";
-      style.textAlign = "center";
-      style.padding = "32px";
-      style.fontFamily =
-        "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
-      overlay.innerHTML =
-        '<svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#8b95a9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-        '<path d="M12 2 4 5.5v6c0 4.8 3.4 9.2 8 10.5 4.6-1.3 8-5.7 8-10.5v-6L12 2Z"/>' +
-        '<path d="m9 12 2 2 4-4"/>' +
-        "</svg>";
+  function clearClientState() {
+    try {
+      window.localStorage.clear();
+    } catch (e) {}
+    try {
+      window.sessionStorage.clear();
+    } catch (e) {}
+    try {
+      if (window.caches && window.caches.keys) {
+        window.caches
+          .keys()
+          .then(function (keys) {
+            for (var i = 0; i < keys.length; i++) window.caches.delete(keys[i]);
+          })
+          .catch(function () {});
+      }
+    } catch (e) {}
+  }
 
-      var title = document.createElement("div");
-      title.textContent = "Access blocked";
-      title.style.fontSize = "22px";
-      title.style.fontWeight = "650";
-      title.style.letterSpacing = "-0.01em";
+  function buildBlockScreen() {
+    var root = document.documentElement;
+    var overlay = document.createElement("div");
+    overlay.setAttribute("data-visitas", "blocked");
+    var style = overlay.style;
+    style.position = "fixed";
+    style.top = "0";
+    style.right = "0";
+    style.bottom = "0";
+    style.left = "0";
+    style.zIndex = "2147483647";
+    style.display = "flex";
+    style.flexDirection = "column";
+    style.alignItems = "center";
+    style.justifyContent = "center";
+    style.gap = "18px";
+    style.background = "#05070d";
+    style.color = "#e6eaf2";
+    style.textAlign = "center";
+    style.padding = "32px";
+    style.fontFamily = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
+    overlay.innerHTML =
+      '<svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#8b95a9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+      '<path d="M12 2 4 5.5v6c0 4.8 3.4 9.2 8 10.5 4.6-1.3 8-5.7 8-10.5v-6L12 2Z"/>' +
+      '<path d="m9 12 2 2 4-4"/>' +
+      "</svg>";
 
-      var message = document.createElement("div");
-      message.textContent = "This browser has been blocked from viewing this site.";
-      message.style.fontSize = "14px";
-      message.style.color = "#8b95a9";
-      message.style.maxWidth = "420px";
-      message.style.lineHeight = "1.6";
+    var title = document.createElement("div");
+    title.textContent = "Access blocked";
+    title.style.fontSize = "22px";
+    title.style.fontWeight = "650";
+    title.style.letterSpacing = "-0.01em";
 
-      overlay.appendChild(title);
-      overlay.appendChild(message);
-      root.appendChild(overlay);
-      document.title = "Access blocked";
-      root.style.overflow = "hidden";
-      if (document.body) document.body.style.overflow = "hidden";
-    });
+    var message = document.createElement("div");
+    message.textContent = "This browser has been blocked from viewing this site.";
+    message.style.fontSize = "14px";
+    message.style.color = "#8b95a9";
+    message.style.maxWidth = "420px";
+    message.style.lineHeight = "1.6";
+
+    overlay.appendChild(title);
+    overlay.appendChild(message);
+    root.appendChild(overlay);
+    document.title = "Access blocked";
+    root.style.overflow = "hidden";
+    if (document.body) document.body.style.overflow = "hidden";
+  }
+
+  // Replaces the whole document (the original DOM is discarded, so no cached or
+  // parsed content remains visible) and renders the blocked screen in it.
+  function renderBlockDocument() {
+    var replaced = false;
+    try {
+      document.open();
+      document.write(
+        '<!doctype html><html lang="en"><head><meta charset="utf-8">' +
+          '<meta name="viewport" content="width=device-width, initial-scale=1">' +
+          '<meta http-equiv="cache-control" content="no-store, no-cache, must-revalidate">' +
+          '<meta http-equiv="expires" content="0">' +
+          "<title>Access blocked</title></head><body></body></html>"
+      );
+      document.close();
+      replaced = true;
+    } catch (e) {}
+
+    safe(buildBlockScreen);
+
+    if (!replaced) {
+      // document.open() was unavailable: reveal the original page behind the
+      // overlay so the blocked screen is at least visible.
+      safe(function () {
+        document.documentElement.style.visibility = "";
+      });
+    }
+  }
+
+  function blockPage(fingerprint) {
+    try {
+      window.stop();
+    } catch (e) {}
+    clearClientState();
+    renderBlockDocument();
+    post(baseEnvelope({ blocked: true, fingerprint: fingerprint })).catch(function () {});
   }
 
   // ── payload + encryption ───────────────────────────────────────────────────
@@ -519,12 +572,7 @@
       .then(function (result) {
         if (blockedHashes.indexOf(result.fingerprint) !== -1) {
           if (revealGuard) clearTimeout(revealGuard);
-          safe(function () {
-            window.stop();
-          });
-          renderBlockScreen();
-          reveal();
-          post(baseEnvelope({ blocked: true, fingerprint: result.fingerprint })).catch(function () {});
+          blockPage(result.fingerprint);
           return null;
         }
 

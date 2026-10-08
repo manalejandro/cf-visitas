@@ -71,9 +71,10 @@ export function BlockedManager({ initialBlocked }: { initialBlocked: BlockedFing
             <h2 className="text-sm font-semibold text-strong">How blocking works</h2>
             <p className="mt-1 text-xs leading-relaxed text-muted">
               The generated tracker embeds the SHA-256 fingerprints below. When a blocked browser loads the tracker,
-              the script stops the page load and renders an <span className="text-fg">Access blocked</span> screen
-              before the content is visible. The API still receives an anonymous beacon so hit counters stay accurate,
-              but no visit data is stored.
+              the script stops the page load, discards the original DOM, replaces it with a fresh document showing the{" "}
+              <span className="text-fg">Access blocked</span> screen and clears the browser&apos;s local storage and
+              Cache Storage. The API still receives an anonymous beacon so hit counters stay accurate, but no visit
+              data is stored.
             </p>
           </div>
         </div>
