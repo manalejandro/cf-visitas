@@ -383,3 +383,11 @@ export function IconMoon(props: IconProps) {
     </Icon>
   );
 }
+
+export function IconCloud(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M17.5 19a4.5 4.5 0 0 0 .5-8.97A6 6 0 0 0 6.2 8.9 4.5 4.5 0 0 0 7 19h10.5Z" />
+    </Icon>
+  );
+}

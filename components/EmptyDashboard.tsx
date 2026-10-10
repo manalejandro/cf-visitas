@@ -1,9 +1,12 @@
 import { CopyButton } from "./CopyButton";
 import { IconActivity, IconShieldCheck, IconZap } from "./icons";
+import { getSiteOrigin } from "@/lib/site";
 
-const SNIPPET = `<script src="https://visitas.manalejandro.com/tracker.js" defer></script>`;
+export async function EmptyDashboard() {
+  const origin = await getSiteOrigin();
+  const trackerUrl = origin ? `${origin}/tracker.js` : "/tracker.js";
+  const snippet = `<script src="${trackerUrl}" defer></script>`;
 
-export function EmptyDashboard() {
   return (
     <div className="panel overflow-hidden">
       <div className="relative border-b border-line px-6 py-10 text-center">
@@ -30,9 +33,9 @@ export function EmptyDashboard() {
             want to track.
           </p>
           <div className="relative rounded-xl border border-line bg-surface-2 p-3">
-            <code className="mono block break-all pr-16 text-[11px] leading-relaxed text-accent-2">{SNIPPET}</code>
+            <code className="mono block break-all pr-16 text-[11px] leading-relaxed text-accent-2">{snippet}</code>
             <div className="absolute right-2 top-2">
-              <CopyButton value={SNIPPET} label="" />
+              <CopyButton value={snippet} label="" />
             </div>
           </div>
         </div>

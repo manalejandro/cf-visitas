@@ -8,7 +8,7 @@
     "type": "git",
     "url": "https://github.com/manalejandro/cf-visitas.git"
   },
-  "homepage": "https://visitas.manalejandro.com",
+  "homepage": "https://github.com/manalejandro/cf-visitas",
   "private": true,
   "packageManager": "npm@12.1.0",
   "dependencies": {

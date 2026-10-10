@@ -41,7 +41,7 @@ Privacy-first web analytics for Cloudflare Workers: the tracker encrypts every v
 | UI        | React 19 + Tailwind CSS v4, custom SVG charts           |
 | Database  | Cloudflare D1 (SQLite)                                  |
 | Crypto    | ML-KEM-1024 (FIPS 203) + AES-256-GCM + HKDF, HMAC-SHA256, JWT |
-| Domain    | `visitas.manalejandro.com`                              |
+| Domain    | your own custom domain (see `wrangler.jsonc`)          |
 
 ## Project structure
 
@@ -128,7 +128,7 @@ npm run deploy
 
 The Worker is published with:
 
-- the custom domain `visitas.manalejandro.com` (see `routes` in `wrangler.jsonc`),
+- your custom domain (configure `routes` in `wrangler.jsonc`),
 - observability enabled (Workers Logs + traces),
 - source maps uploaded for readable stack traces.
 
@@ -137,7 +137,7 @@ The Worker is published with:
 Add this snippet before `</head>` on every page you want to measure:
 
 ```html
-<script src="https://visitas.manalejandro.com/tracker.js"></script>
+<script src="https://your-domain.example/tracker.js"></script>
 ```
 
 The tracker:

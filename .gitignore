@@ -15,5 +15,8 @@ next-env.d.ts
 *.tsbuildinfo
 .DS_Store
 
+# Local deployment config with real ids/domain (never committed)
+*.orig
+
 # Generated: obfuscated tracker bundle (npm run build:tracker)
 /tracker/tracker.dist.js

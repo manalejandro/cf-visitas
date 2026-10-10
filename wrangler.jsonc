@@ -32,13 +32,12 @@
 		}
 	],
 
-	// ── Custom domain ───────────────────────────────────────────────────────
-	"routes": [
-		{
-			"pattern": "visitas.manalejandro.com",
-			"custom_domain": true
-		}
-	],
+	// ── Custom domain (optional) ────────────────────────────────────────────
+	// Set your own domain before deploying (see README → Deploy). Removing it
+	// from this file after a deploy detaches the custom domain on the next one.
+	// "routes": [
+	// 	{ "pattern": "your-domain.example", "custom_domain": true }
+	// ],
 
 	// ── Observability (Workers Logs + traces) ───────────────────────────────
 	"observability": {

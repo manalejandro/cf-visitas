@@ -3,9 +3,24 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { CopyButton } from "./CopyButton";
-import { IconAlert, IconFingerprint, IconPlus, IconShield, IconTrash } from "./icons";
+import { IconAlert, IconCloud, IconFingerprint, IconPlus, IconShield, IconTrash } from "./icons";
+import { buildFirewallRule, buildSingleFirewallRule, type FirewallRuleVariant } from "@/lib/cf-rules";
 import { formatDateTime, formatNumber, formatRelativeTime, truncate } from "@/lib/format";
 import type { BlockedFingerprint } from "@/lib/types";
+
+const RULE_VARIANTS: Array<{ key: FirewallRuleVariant; label: string; hint: string }> = [
+  {
+    key: "ip+user-agent",
+    label: "IP + User-Agent",
+    hint: "Most precise: only that browser from that IP address.",
+  },
+  { key: "ip", label: "IP only", hint: "Blocks every request coming from those IP addresses." },
+  {
+    key: "user-agent",
+    label: "User-Agent only",
+    hint: "Broad: may also match other visitors using the same browser version.",
+  },
+];
 
 export function BlockedManager({ initialBlocked }: { initialBlocked: BlockedFingerprint[] }) {
   const router = useRouter();
@@ -15,6 +30,9 @@ export function BlockedManager({ initialBlocked }: { initialBlocked: BlockedFing
   const [removing, setRemoving] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [now] = useState(() => Date.now());
+  const [ruleVariant, setRuleVariant] = useState<FirewallRuleVariant>("ip+user-agent");
+
+  const firewallRule = buildFirewallRule(initialBlocked, ruleVariant);
 
   const validFingerprint = /^[0-9a-f]{64}$/i.test(fingerprint.trim());
 
@@ -142,6 +160,7 @@ export function BlockedManager({ initialBlocked }: { initialBlocked: BlockedFing
               <thead>
                 <tr className="border-y border-line bg-subtle text-[11px] uppercase tracking-wider text-faint">
                   <th className="px-5 py-2.5 font-medium">Fingerprint</th>
+                  <th className="px-3 py-2.5 font-medium">IP</th>
                   <th className="px-3 py-2.5 font-medium">Reason</th>
                   <th className="px-3 py-2.5 font-medium">Blocked at</th>
                   <th className="px-3 py-2.5 text-right font-medium">Hits</th>
@@ -158,6 +177,9 @@ export function BlockedManager({ initialBlocked }: { initialBlocked: BlockedFing
                         <CopyButton value={entry.fingerprint} label="" />
                       </span>
                     </td>
+                    <td className="px-3 py-3" title={entry.userAgent ?? undefined}>
+                      <span className="mono text-[11px] text-muted">{entry.ip || "—"}</span>
+                    </td>
                     <td className="max-w-[220px] px-3 py-3 text-[13px] text-muted">
                       {entry.reason || <span className="text-faint">—</span>}
                     </td>
@@ -171,21 +193,92 @@ export function BlockedManager({ initialBlocked }: { initialBlocked: BlockedFing
                       {entry.lastHitAt ? formatRelativeTime(entry.lastHitAt, now) : <span className="text-faint">—</span>}
                     </td>
                     <td className="px-5 py-3 text-right">
-                      <button
-                        type="button"
-                        className="btn !px-2 !py-1.5 text-xs"
-                        disabled={removing === entry.fingerprint}
-                        onClick={() => unblock(entry.fingerprint)}
-                      >
-                        <IconTrash className="h-3.5 w-3.5" />
-                        {removing === entry.fingerprint ? "Removing…" : "Unblock"}
-                      </button>
+                      <span className="inline-flex items-center gap-1.5">
+                        {buildSingleFirewallRule(entry, ruleVariant) ? (
+                          <CopyButton value={buildSingleFirewallRule(entry, ruleVariant)} label="Rule" />
+                        ) : null}
+                        <button
+                          type="button"
+                          className="btn !px-2 !py-1.5 text-xs"
+                          disabled={removing === entry.fingerprint}
+                          onClick={() => unblock(entry.fingerprint)}
+                        >
+                          <IconTrash className="h-3.5 w-3.5" />
+                          {removing === entry.fingerprint ? "Removing…" : "Unblock"}
+                        </button>
+                      </span>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+        )}
+      </div>
+
+      <div className="panel p-5">
+        <div className="flex items-start gap-3">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-indigo-500/20 bg-indigo-500/10 text-indigo-600 dark:text-indigo-300">
+            <IconCloud className="h-4 w-4" />
+          </span>
+          <div className="min-w-0">
+            <h2 className="text-sm font-semibold text-strong">Cloudflare firewall export</h2>
+            <p className="mt-1 max-w-3xl text-xs leading-relaxed text-muted">
+              Cloudflare cannot compute browser fingerprints at the edge, so these expressions mirror the blocklist
+              with the request data stored for each fingerprint (IP address and User-Agent). Paste them into{" "}
+              <a
+                href="https://developers.cloudflare.com/waf/custom-rules/"
+                target="_blank"
+                rel="noreferrer"
+                className="text-accent hover:opacity-80"
+              >
+                Security → WAF → Custom rules
+              </a>{" "}
+              with the <span className="text-fg">Block</span> action. The tracker keeps enforcing the fingerprint
+              block on its own; this just adds an edge layer.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-1.5">
+          {RULE_VARIANTS.map((variant) => {
+            const active = variant.key === ruleVariant;
+            return (
+              <button
+                key={variant.key}
+                type="button"
+                title={variant.hint}
+                onClick={() => setRuleVariant(variant.key)}
+                className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+                  active
+                    ? "border-transparent bg-gradient-to-r from-indigo-500/90 to-cyan-400/80 text-white"
+                    : "border-line bg-subtle text-muted hover:bg-subtle-strong hover:text-strong"
+                }`}
+              >
+                {variant.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {firewallRule.expression ? (
+          <div className="mt-3">
+            <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-faint">
+                Expression · {firewallRule.entries} {firewallRule.entries === 1 ? "entry" : "entries"}
+                {firewallRule.skipped > 0 ? ` · ${firewallRule.skipped} without data` : ""}
+              </span>
+              <CopyButton value={firewallRule.expression} label="Copy expression" />
+            </div>
+            <pre className="mono max-h-52 overflow-auto whitespace-pre-wrap break-all rounded-lg border border-line bg-surface-2 px-3 py-2 text-[11px] leading-relaxed text-fg">
+              {firewallRule.expression}
+            </pre>
+          </div>
+        ) : (
+          <p className="mt-3 rounded-lg border border-warning/25 bg-warning/10 px-3 py-2 text-xs text-warning">
+            No request data (IP / User-Agent) is available for the blocked fingerprints yet — the expression will
+            appear once a blocked browser is seen by the tracker.
+          </p>
         )}
       </div>
 

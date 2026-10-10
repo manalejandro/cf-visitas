@@ -387,9 +387,12 @@ export async function isFingerprintBlocked(fingerprint: string): Promise<boolean
 
 export async function listBlockedFingerprints(): Promise<BlockedFingerprint[]> {
   const result = await env.DB.prepare(
-    `SELECT id, fingerprint, reason, created_at, hits, last_hit_at
-     FROM blocked_fingerprints
-     ORDER BY created_at DESC`,
+    `SELECT b.id, b.fingerprint, b.reason, b.created_at, b.hits, b.last_hit_at,
+            (SELECT v.ip FROM visits v WHERE v.fingerprint = b.fingerprint ORDER BY v.ts DESC LIMIT 1) AS ip,
+            (SELECT json_extract(v.meta, '$.userAgent') FROM visits v
+              WHERE v.fingerprint = b.fingerprint ORDER BY v.ts DESC LIMIT 1) AS user_agent
+     FROM blocked_fingerprints b
+     ORDER BY b.created_at DESC`,
   ).all<Record<string, unknown>>();
 
   return (result.results ?? []).map((row) => ({
@@ -399,6 +402,8 @@ export async function listBlockedFingerprints(): Promise<BlockedFingerprint[]> {
     createdAt: String(row.created_at ?? ""),
     hits: Number(row.hits) || 0,
     lastHitAt: row.last_hit_at === null || row.last_hit_at === undefined ? null : String(row.last_hit_at),
+    ip: row.ip === null || row.ip === undefined ? null : String(row.ip),
+    userAgent: row.user_agent === null || row.user_agent === undefined ? null : String(row.user_agent),
   }));
 }
 

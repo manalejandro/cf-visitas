@@ -1,51 +1,55 @@
 import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
+import { getSiteOrigin } from "@/lib/site";
 import "./globals.css";
 
-const siteUrl = "https://visitas.manalejandro.com";
 const siteName = "Visitas";
 const description =
   "Privacy-first web analytics: client-side encrypted visits, fingerprint-based blocking and a real-time dashboard — powered by Cloudflare Workers and D1.";
 
-export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
-  title: {
-    default: "Visitas — Web Analytics",
-    template: "%s · Visitas",
-  },
-  description,
-  applicationName: siteName,
-  keywords: ["web analytics", "privacy", "Cloudflare Workers", "D1", "fingerprinting", "visits"],
-  authors: [{ name: "manalejandro", url: "https://github.com/manalejandro" }],
-  creator: "manalejandro",
-  publisher: "manalejandro",
-  alternates: { canonical: "/" },
-  openGraph: {
-    type: "website",
-    url: siteUrl,
-    siteName,
-    title: "Visitas — Web Analytics",
+export async function generateMetadata(): Promise<Metadata> {
+  const origin = await getSiteOrigin();
+
+  return {
+    metadataBase: origin ? new URL(origin) : undefined,
+    title: {
+      default: "Visitas — Web Analytics",
+      template: "%s · Visitas",
+    },
     description,
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Visitas — Web Analytics",
-    description,
-  },
-  robots: {
-    index: false,
-    follow: false,
-    nocache: true,
-  },
-  icons: {
-    icon: [
-      { url: "/icon.svg", type: "image/svg+xml" },
-      { url: "/favicon.ico", sizes: "48x48" },
-    ],
-    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
-  },
-  manifest: "/manifest.webmanifest",
-};
+    applicationName: siteName,
+    keywords: ["web analytics", "privacy", "Cloudflare Workers", "D1", "fingerprinting", "visits"],
+    authors: [{ name: "manalejandro", url: "https://github.com/manalejandro" }],
+    creator: "manalejandro",
+    publisher: "manalejandro",
+    alternates: { canonical: "/" },
+    openGraph: {
+      type: "website",
+      url: origin || undefined,
+      siteName,
+      title: "Visitas — Web Analytics",
+      description,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "Visitas — Web Analytics",
+      description,
+    },
+    robots: {
+      index: false,
+      follow: false,
+      nocache: true,
+    },
+    icons: {
+      icon: [
+        { url: "/icon.svg", type: "image/svg+xml" },
+        { url: "/favicon.ico", sizes: "48x48" },
+      ],
+      apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
+    },
+    manifest: "/manifest.webmanifest",
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: [
