@@ -387,30 +387,71 @@ export async function isFingerprintBlocked(fingerprint: string): Promise<boolean
 
 export async function listBlockedFingerprints(): Promise<BlockedFingerprint[]> {
   const result = await env.DB.prepare(
-    `SELECT b.id, b.fingerprint, b.reason, b.created_at, b.hits, b.last_hit_at,
-            (SELECT v.ip FROM visits v WHERE v.fingerprint = b.fingerprint ORDER BY v.ts DESC LIMIT 1) AS ip,
-            (SELECT json_extract(v.meta, '$.userAgent') FROM visits v
-              WHERE v.fingerprint = b.fingerprint ORDER BY v.ts DESC LIMIT 1) AS user_agent
+    `SELECT b.id, b.fingerprint, b.reason, b.created_at, b.hits, b.last_hit_at, b.ips,
+            COALESCE(b.last_ip,
+              (SELECT v.ip FROM visits v WHERE v.fingerprint = b.fingerprint AND v.ip != '' ORDER BY v.ts DESC LIMIT 1)
+            ) AS ip,
+            COALESCE(b.last_user_agent,
+              (SELECT json_extract(v.meta, '$.userAgent') FROM visits v
+                WHERE v.fingerprint = b.fingerprint ORDER BY v.ts DESC LIMIT 1)
+            ) AS user_agent,
+            (SELECT json_group_array(DISTINCT v.ip) FROM visits v
+              WHERE v.fingerprint = b.fingerprint AND v.ip != ''
+            ) AS visit_ips
      FROM blocked_fingerprints b
      ORDER BY b.created_at DESC`,
   ).all<Record<string, unknown>>();
 
-  return (result.results ?? []).map((row) => ({
-    id: Number(row.id),
-    fingerprint: String(row.fingerprint ?? ""),
-    reason: String(row.reason ?? ""),
-    createdAt: String(row.created_at ?? ""),
-    hits: Number(row.hits) || 0,
-    lastHitAt: row.last_hit_at === null || row.last_hit_at === undefined ? null : String(row.last_hit_at),
-    ip: row.ip === null || row.ip === undefined ? null : String(row.ip),
-    userAgent: row.user_agent === null || row.user_agent === undefined ? null : String(row.user_agent),
-  }));
+  return (result.results ?? []).map((row) => {
+    const ip = row.ip === null || row.ip === undefined ? null : String(row.ip);
+    const beaconIps = parseStringArray(row.ips);
+    const visitIps = parseStringArray(row.visit_ips);
+
+    return {
+      id: Number(row.id),
+      fingerprint: String(row.fingerprint ?? ""),
+      reason: String(row.reason ?? ""),
+      createdAt: String(row.created_at ?? ""),
+      hits: Number(row.hits) || 0,
+      lastHitAt: row.last_hit_at === null || row.last_hit_at === undefined ? null : String(row.last_hit_at),
+      ip,
+      userAgent: row.user_agent === null || row.user_agent === undefined ? null : String(row.user_agent),
+      // Every IP detected for this browser (visits first, then blocked hits).
+      ips: uniqueStrings([...visitIps, ...beaconIps, ...(ip ? [ip] : [])]),
+    };
+  });
+}
+
+function parseStringArray(value: unknown): string[] {
+  if (typeof value !== "string" || value.length === 0) return [];
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === "string" && item.length > 0) : [];
+  } catch {
+    return [];
+  }
+}
+
+function uniqueStrings(values: string[]): string[] {
+  return [...new Set(values)];
 }
 
 export async function addBlockedFingerprint(fingerprint: string, reason: string): Promise<void> {
+  // Seed the IP / User-Agent from the latest stored visit so the firewall
+  // export has data even before the blocked browser hits the tracker again.
   await env.DB.prepare(
-    `INSERT INTO blocked_fingerprints (fingerprint, reason, created_at)
-     VALUES (?1, ?2, ?3)
+    `INSERT INTO blocked_fingerprints (fingerprint, reason, created_at, last_ip, last_user_agent, ips)
+     VALUES (
+       ?1, ?2, ?3,
+       (SELECT v.ip FROM visits v WHERE v.fingerprint = ?1 AND v.ip != '' ORDER BY v.ts DESC LIMIT 1),
+       (SELECT json_extract(v.meta, '$.userAgent') FROM visits v
+         WHERE v.fingerprint = ?1 ORDER BY v.ts DESC LIMIT 1),
+       COALESCE(
+         (SELECT json_group_array(DISTINCT v.ip) FROM visits v
+           WHERE v.fingerprint = ?1 AND v.ip != ''),
+         '[]'
+       )
+     )
      ON CONFLICT (fingerprint) DO UPDATE SET reason = excluded.reason`,
   )
     .bind(fingerprint, reason, new Date().toISOString())
@@ -424,12 +465,38 @@ export async function removeBlockedFingerprint(fingerprint: string): Promise<boo
   return (result.meta?.changes ?? 0) > 0;
 }
 
-export async function recordBlockedHit(fingerprint: string): Promise<void> {
+/**
+ * Records a blocked hit: bumps the counter, refreshes the last IP /
+ * User-Agent and adds the IP to the fingerprint's detected IP list.
+ */
+export async function recordBlockedHit(fingerprint: string, ip = "", userAgent = ""): Promise<void> {
+  const now = new Date().toISOString();
+  const cleanIp = ip.trim();
+
+  if (!cleanIp) {
+    await env.DB.prepare(
+      `UPDATE blocked_fingerprints
+       SET hits = hits + 1, last_hit_at = ?1, last_user_agent = COALESCE(NULLIF(?2, ''), last_user_agent)
+       WHERE fingerprint = ?3`,
+    )
+      .bind(now, userAgent, fingerprint)
+      .run();
+    return;
+  }
+
   await env.DB.prepare(
     `UPDATE blocked_fingerprints
-     SET hits = hits + 1, last_hit_at = ?1
-     WHERE fingerprint = ?2`,
+     SET hits = hits + 1,
+         last_hit_at = ?1,
+         last_ip = ?2,
+         last_user_agent = COALESCE(NULLIF(?3, ''), last_user_agent),
+         ips = CASE
+           WHEN ips IS NULL OR ips = '' OR json_valid(ips) = 0 THEN json_array(?2)
+           WHEN EXISTS (SELECT 1 FROM json_each(blocked_fingerprints.ips) WHERE json_each.value = ?2) THEN ips
+           ELSE json_insert(ips, '$[#]', ?2)
+         END
+     WHERE fingerprint = ?4`,
   )
-    .bind(new Date().toISOString(), fingerprint)
+    .bind(now, cleanIp, userAgent, fingerprint)
     .run();
 }

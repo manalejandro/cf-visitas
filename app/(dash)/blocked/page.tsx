@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { BlockedManager } from "@/components/BlockedManager";
+import { RefreshButton } from "@/components/RefreshButton";
 import { listBlockedFingerprints } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -14,12 +15,15 @@ export default async function BlockedPage() {
 
   return (
     <div className="space-y-5">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight text-strong">Blocked browsers</h1>
-        <p className="mt-1 max-w-3xl text-sm text-muted">
-          Fingerprints listed here are embedded in every generated tracker. When a blocked browser loads a page with
-          the tracker installed, the page load is cancelled and replaced with an &ldquo;Access blocked&rdquo; screen.
-        </p>
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-strong">Blocked browsers</h1>
+          <p className="mt-1 max-w-3xl text-sm text-muted">
+            Fingerprints listed here are embedded in every generated tracker. When a blocked browser loads a page with
+            the tracker installed, the page load is cancelled and replaced with an &ldquo;Access blocked&rdquo; screen.
+          </p>
+        </div>
+        <RefreshButton />
       </header>
       <BlockedManager initialBlocked={blocked} />
     </div>

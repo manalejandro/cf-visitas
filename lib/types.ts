@@ -70,10 +70,12 @@ export interface BlockedFingerprint {
   createdAt: string;
   hits: number;
   lastHitAt: string | null;
-  /** IP of the latest visit from this fingerprint (for firewall exports). */
+  /** Last IP seen for this fingerprint (visit or blocked hit). */
   ip: string | null;
-  /** User-Agent of the latest visit from this fingerprint. */
+  /** User-Agent of the latest visit / blocked hit. */
   userAgent: string | null;
+  /** Every IP detected for this browser (visits + blocked hits). */
+  ips: string[];
 }
 
 export interface VisitsPage {

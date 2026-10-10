@@ -57,7 +57,7 @@ export async function POST(request: NextRequest): Promise<Response> {
     const fingerprint = typeof envelope.fingerprint === "string" ? envelope.fingerprint.toLowerCase() : "";
     if (!isHex(fingerprint, 64)) return json({ error: "Invalid fingerprint" }, 400);
     if (!rateLimit("blocked", fingerprint, 20, 60_000)) return json({ ok: true });
-    await recordBlockedHit(fingerprint);
+    await recordBlockedHit(fingerprint, geo.ip, request.headers.get("user-agent") ?? "");
     return json({ ok: true });
   }
 
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest): Promise<Response> {
 
   // The blocklist may have changed after the tracker was served.
   if (await isFingerprintBlocked(visit.fingerprint)) {
-    await recordBlockedHit(visit.fingerprint);
+    await recordBlockedHit(visit.fingerprint, visit.ip, request.headers.get("user-agent") ?? "");
     return json({ ok: true, blocked: true });
   }
 
