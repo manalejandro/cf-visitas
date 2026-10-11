@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CopyButton } from "./CopyButton";
 import { IconAlert, IconCloud, IconFingerprint, IconPlus, IconShield, IconTrash } from "./icons";
 import {
   buildFirewallRules,
-  buildSingleFirewallRule,
+  sourceExpressions,
   toRuleSource,
   type FirewallRuleMode,
   type FirewallRuleVariant,
@@ -40,9 +40,15 @@ export function BlockedManager({ initialBlocked }: { initialBlocked: BlockedFing
   const [saving, setSaving] = useState(false);
   const [removing, setRemoving] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [now] = useState(() => Date.now());
+  // `now` starts null so the server and the client render identical markup
+  // (relative times depend on the current clock and would break hydration).
+  const [now, setNow] = useState<number | null>(null);
   const [ruleVariant, setRuleVariant] = useState<FirewallRuleVariant>("ip+user-agent");
   const [ruleMode, setRuleMode] = useState<FirewallRuleMode>("combined");
+
+  useEffect(() => {
+    setNow(Date.now());
+  }, []);
 
   const firewallRule = buildFirewallRules(initialBlocked.map(toRuleSource), ruleVariant, ruleMode);
 
@@ -205,13 +211,22 @@ export function BlockedManager({ initialBlocked }: { initialBlocked: BlockedFing
                       {formatNumber(entry.hits)}
                     </td>
                     <td className="whitespace-nowrap px-3 py-3 text-[12px] text-muted">
-                      {entry.lastHitAt ? formatRelativeTime(entry.lastHitAt, now) : <span className="text-faint">—</span>}
+                      {entry.lastHitAt ? (
+                        now ? (
+                          formatRelativeTime(entry.lastHitAt, now)
+                        ) : (
+                          formatDateTime(entry.lastHitAt)
+                        )
+                      ) : (
+                        <span className="text-faint">—</span>
+                      )}
                     </td>
                     <td className="px-5 py-3 text-right">
                       <span className="inline-flex items-center gap-1.5">
-                        {buildSingleFirewallRule(toRuleSource(entry), ruleVariant) ? (
-                          <CopyButton value={buildSingleFirewallRule(toRuleSource(entry), ruleVariant)} label="Rule" />
-                        ) : null}
+                        {(() => {
+                          const rule = sourceExpressions(toRuleSource(entry), ruleVariant).join("\n\n");
+                          return rule ? <CopyButton value={rule} label="Rule" /> : null;
+                        })()}
                         <button
                           type="button"
                           className="btn !px-2 !py-1.5 text-xs"
@@ -303,19 +318,38 @@ export function BlockedManager({ initialBlocked }: { initialBlocked: BlockedFing
         </div>
 
         {ruleMode === "combined" ? (
-          firewallRule.expression ? (
-            <div className="mt-3">
-              <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2">
+          firewallRule.expressions.length > 0 ? (
+            <div className="mt-3 space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-faint">
-                  Combined expression · {firewallRule.fingerprints}{" "}
-                  {firewallRule.fingerprints === 1 ? "fingerprint" : "fingerprints"}
+                  Combined rules · {firewallRule.fingerprints}{" "}
+                  {firewallRule.fingerprints === 1 ? "fingerprint" : "fingerprints"} · {formatNumber(firewallRule.totalIps)}{" "}
+                  {firewallRule.totalIps === 1 ? "IP" : "IPs"}
+                  {firewallRule.expressions.length > 1
+                    ? ` · split into ${firewallRule.expressions.length} rules (4 KB limit)`
+                    : ""}
                   {firewallRule.skipped > 0 ? ` · ${firewallRule.skipped} without data` : ""}
                 </span>
-                <CopyButton value={firewallRule.expression} label="Copy expression" />
+                <CopyButton
+                  value={firewallRule.expressions.join("\n\n")}
+                  label={firewallRule.expressions.length > 1 ? "Copy all rules" : "Copy expression"}
+                />
               </div>
-              <pre className="mono max-h-52 overflow-auto whitespace-pre-wrap break-all rounded-lg border border-line bg-surface-2 px-3 py-2 text-[11px] leading-relaxed text-fg">
-                {firewallRule.expression}
-              </pre>
+              {firewallRule.expressions.map((expression, index) => (
+                <div key={index} className="rounded-lg border border-line bg-surface-2 p-2.5">
+                  {firewallRule.expressions.length > 1 ? (
+                    <div className="mb-1.5 flex items-center justify-between gap-2">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-faint">
+                        Rule {index + 1} of {firewallRule.expressions.length}
+                      </span>
+                      <CopyButton value={expression} label="Copy" />
+                    </div>
+                  ) : null}
+                  <pre className="mono max-h-52 overflow-auto whitespace-pre-wrap break-all text-[11px] leading-relaxed text-fg">
+                    {expression}
+                  </pre>
+                </div>
+              ))}
             </div>
           ) : (
             <p className="mt-3 rounded-lg border border-warning/25 bg-warning/10 px-3 py-2 text-xs text-warning">
@@ -328,11 +362,14 @@ export function BlockedManager({ initialBlocked }: { initialBlocked: BlockedFing
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-[10px] font-semibold uppercase tracking-wider text-faint">
                 Independent rules · {firewallRule.fingerprints}{" "}
-                {firewallRule.fingerprints === 1 ? "fingerprint" : "fingerprints"}
+                {firewallRule.fingerprints === 1 ? "fingerprint" : "fingerprints"} ·{" "}
+                {formatNumber(firewallRule.totalIps)} {firewallRule.totalIps === 1 ? "IP" : "IPs"}
                 {firewallRule.skipped > 0 ? ` · ${firewallRule.skipped} without data` : ""}
               </span>
               <CopyButton
-                value={firewallRule.entries.map((entry) => entry.expression).join("\n\n")}
+                value={firewallRule.entries
+                  .flatMap((entry) => entry.expressions)
+                  .join("\n\n")}
                 label="Copy all"
               />
             </div>
@@ -340,11 +377,18 @@ export function BlockedManager({ initialBlocked }: { initialBlocked: BlockedFing
               <div key={entry.fingerprint} className="rounded-lg border border-line bg-surface-2 p-2.5">
                 <div className="mb-1.5 flex items-center justify-between gap-2">
                   <span className="mono text-[10px] text-muted">{truncate(entry.fingerprint, 22)}</span>
-                  <CopyButton value={entry.expression} label="Copy" />
+                  <CopyButton value={entry.expressions.join("\n\n")} label="Copy" />
                 </div>
-                <pre className="mono max-h-32 overflow-auto whitespace-pre-wrap break-all text-[11px] leading-relaxed text-fg">
-                  {entry.expression}
-                </pre>
+                <div className="space-y-2">
+                  {entry.expressions.map((expression, index) => (
+                    <pre
+                      key={index}
+                      className="mono max-h-32 overflow-auto whitespace-pre-wrap break-all text-[11px] leading-relaxed text-fg"
+                    >
+                      {expression}
+                    </pre>
+                  ))}
+                </div>
               </div>
             ))}
           </div>

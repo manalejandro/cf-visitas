@@ -493,6 +493,7 @@ export async function recordBlockedHit(fingerprint: string, ip = "", userAgent =
          ips = CASE
            WHEN ips IS NULL OR ips = '' OR json_valid(ips) = 0 THEN json_array(?2)
            WHEN EXISTS (SELECT 1 FROM json_each(blocked_fingerprints.ips) WHERE json_each.value = ?2) THEN ips
+           WHEN json_array_length(ips) >= 500 THEN ips
            ELSE json_insert(ips, '$[#]', ?2)
          END
      WHERE fingerprint = ?4`,
